@@ -108,6 +108,80 @@ User session or GitHub task
 
 Never use raw user identifiers as metric labels. Prefer a privacy-reviewed pseudonymous identifier in logs only.
 
+
+## Telemetry architecture diagram
+
+```mermaid
+flowchart LR
+    subgraph Sources["1. Activity sources"]
+        U["User"]
+        C["GitHub Copilot: GitHub, VS Code, CLI, and cloud agent"]
+        R["GitHub repository"]
+    end
+
+    subgraph Execution["2. Agent execution"]
+        O["Orchestrator or agent"]
+        M["Model"]
+        P["Authorization policy"]
+    end
+
+    subgraph MCP["3. MCP tools"]
+        G["Gateway or MCP client"]
+        S["MCP servers"]
+        X["External systems"]
+    end
+
+    subgraph Instrumentation["4. Instrumentation"]
+        H["Agent hooks (custom)"]
+        A["GitHub audit log (native)"]
+        UM["Copilot usage metrics (native)"]
+        OT["OpenTelemetry and custom collector (custom)"]
+    end
+
+    subgraph Platform["5. Storage and consumption"]
+        B["Telemetry backend"]
+        ME["Metrics"]
+        TR["Traces"]
+        EV["Events"]
+        D["Dashboards and alerts"]
+        K["KPI analysis"]
+    end
+
+    U --> C
+    C --> R
+    C --> O
+    R --> O
+    O --> M
+    O --> P
+    P --> G
+    O --> G
+    G --> S
+    S --> X
+
+    O -.-> H
+    G -.-> H
+    C ==> UM
+    C ==> A
+    R ==> A
+    H --> OT
+    S -.-> OT
+
+    OT --> B
+    UM ==> B
+    A ==> B
+    B --> ME
+    B --> TR
+    B --> EV
+    ME --> D
+    TR --> D
+    EV --> D
+    D --> K
+```
+
+Legend: double-line arrows (`==>`) represent telemetry that is native to or derived from GitHub; dotted arrows (`-.->`) represent custom telemetry that requires additional instrumentation.
+
+GitHub and Copilot provide native or derived signals for adoption, agent activity, sessions, pull requests, and audit events depending on the surface used. Individual MCP calls, latency, retries, validations, goal-level cost, and business quality usually require custom instrumentation when they are not exposed natively.
+
 ## 5. Telemetry signals
 
 ### 5.1 Traces
